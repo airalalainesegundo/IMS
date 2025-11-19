@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card p-3">
+  <h5>{{ req.title }}</h5>
+  <p><strong>Student:</strong> {{ student.name if student else req.student_id }}</p>
+  <p><strong>Description:</strong> {{ req.description }}</p>
+  <p><strong>Status:</strong> {{ req.status }}</p>
+  <p><strong>Admin comment:</strong> {{ req.admin_comment or '—' }}</p>
+  <p>
+    {% if req.endorsement_file %}
+      <a class="btn btn-outline-primary" href="{{ url_for('uploaded_file', filename=req.endorsement_file) }}">Download endorsement</a>
+    {% endif %}
+  </p>
+  {% if session.get('role') == 'admin' %}
+    <a class="btn btn-primary" href="{{ url_for('admin_upload', req_id=req.id) }}">Upload/Replace endorsement</a>
+  {% endif %}
+  {% if session.get('role') == 'student' and req.status == 'endorsed' %}
+    <a class="btn btn-success" href="{{ url_for('apply_hte', req_id=req.id) }}">Apply to HTE</a>
+  {% endif %}
+</div>
+{% endblock %}

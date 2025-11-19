@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow p-4">
+    <h3 class="text-center text-primary mb-3">Daily Log of {{ student.name }}</h3>
+
+    <!-- ✅ Total Hours Summary -->
+    <div class="alert alert-info text-center fw-bold">
+      ✅ Total Hours Done: {{ "%.2f"|format(total_done_hours) }} hrs |
+      ⏳ Remaining Hours: {{ "%.2f"|format(remaining_hours) }} hrs
+    </div>
+
+    <!-- ✅ Table of Logs -->
+    {% if daily_logs %}
+    <table class="table table-bordered table-striped mt-3">
+      <thead class="table-dark text-center">
+        <tr>
+          <th>Date</th>
+          <th>IN (AM)</th>
+          <th>OUT (AM)</th>
+          <th>IN (PM)</th>
+          <th>OUT (PM)</th>
+          <th>Hours Done</th>
+        </tr>
+      </thead>
+      <tbody class="text-center">
+        {% for log in daily_logs %}
+        <tr>
+          <td>{{ log.date }}</td>
+          <td>{{ log.in_am or '—' }}</td>
+          <td>{{ log.out_am or '—' }}</td>
+          <td>{{ log.in_pm or '—' }}</td>
+          <td>{{ log.out_pm or '—' }}</td>
+          <td>{{ log.hours_done }} hrs</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted text-center mt-3">No daily logs found.</p>
+    {% endif %}
+
+    <div class="text-center mt-3">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

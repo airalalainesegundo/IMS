@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+  <div class="card p-4 w-90 shadow">
+    <h3 class="text-center text-success">HTE Dashboard</h3>
+    <p class="text-center">Welcome, {{ current_user.name or current_user.username }} 👨‍🏫</p>
+
+    <!-- ✅ Menu Buttons -->
+    <div class="d-flex justify-content-center mb-3 gap-2 flex-wrap">
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#endorsementSection">
+        Endorsement
+      </button>
+
+      <button class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#attendanceSection">
+        Attendance
+      </button>
+
+      <button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#messageSection">
+        💬 Message Students
+        {% if unread_count and unread_count > 0 %}
+          <span class="badge bg-danger">{{ unread_count }}</span>
+        {% endif %}
+      </button>
+
+      <!-- 🆕 Message Admin Button -->
+      
+<a href="{{ url_for('chat_hte_admin') }}" class="btn btn-warning">
+  💬 Message Admin
+</a>
+
+
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#accomplishmentSection">
+        📄 Accomplishment Report
+      </button>
+
+      <a href="{{ url_for('admin_files_hte', hte_id=current_user.id) }}" class="btn btn-secondary">
+        📁 Important Files
+      </a>
+    </div>
+
+    <!-- ✅ Logout button below -->
+    <div class="text-center mb-3">
+      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+
+    <!-- ✅ Endorsement Section -->
+    <div class="collapse" id="endorsementSection">
+      <div class="card card-body shadow">
+        {% if requests %}
+          <table class="table table-bordered table-striped" id="endorsementTable">
+            <thead class="table-dark">
+              <tr>
+                <th>Title</th>
+                <th>Student Name</th>
+                <th>Status</th>
+                <th>Student File</th>
+                <th>Upload HTE Endorsement</th>
+                <th>Approved Endorsement</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for req in requests %}
+                <tr id="endorsementRow{{ req.id }}">
+                  <td>{{ req.title }}</td>
+                  <td>{{ req.student.name }}</td>
+                  <td id="status{{ req.id }}">{{ req.status }}</td>
+                  <td>
+                    {% if req.endorsement_file %}
+                      <a href="{{ url_for('download_file', filename=req.endorsement_file) }}" target="_blank">View File</a>
+                    {% else %}-{% endif %}
+                  </td>
+                  <td>
+                    {% if req.status == 'For HTE' %}
+                      <form class="upload-hte-form" data-req-id="{{ req.id }}" enctype="multipart/form-data">
+                        <input type="file" name="hte_endorsement_file" class="form-control mb-1" required>
+                        <button type="submit" class="btn btn-warning btn-sm">Upload</button>
+                      </form>
+                    {% else %}
+                      -
+                    {% endif %}
+                  </td>
+                  <td id="approvedFile{{ req.id }}">
+                    {% if req.hte_endorsement_file %}
+                      <a href="{{ url_for('download_file', filename=req.hte_endorsement_file) }}" target="_blank">View File</a>
+                    {% else %}-{% endif %}
+                  </td>
+                  <td>
+                    <form method="POST" action="{{ url_for('delete_endorsement', req_id=req.id) }}" onsubmit="return confirm('Are you sure you want to delete this endorsement?');">
+                      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="text-muted">No endorsements for review.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ✅ Attendance Section -->
+    <div class="collapse" id="attendanceSection">
+      <div class="card card-body shadow">
+        <h5 class="text-center mb-3">📅 Student Attendance Records</h5>
+
+        {% if grouped_attendance %}
+          <div class="accordion" id="studentAttendanceAccordion">
+            {% for student_name, months in grouped_attendance.items() %}
+              <div class="accordion-item mb-2">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapseStudent{{ loop.index }}">
+                    👩‍🎓 {{ student_name }}
+                  </button>
+                </h2>
+                <div id="collapseStudent{{ loop.index }}" class="accordion-collapse collapse"
+                     data-bs-parent="#studentAttendanceAccordion">
+                  <div class="accordion-body">
+                    {% for month, weeks in months.items() %}
+                      <div class="accordion" id="monthAccordion{{ loop.index }}">
+                        <div class="accordion-item mb-2">
+                          <h2 class="accordion-header" id="monthHeading{{ loop.index }}">
+                            <button class="accordion-button collapsed bg-light" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#collapseMonth{{ loop.index }}{{ loop.index0 }}">
+                              📆 {{ month }}
+                            </button>
+                          </h2>
+                          <div id="collapseMonth{{ loop.index }}{{ loop.index0 }}" class="accordion-collapse collapse">
+                            <div class="accordion-body">
+                              {% for week_label, records in weeks.items() %}
+                                <div class="card mb-3">
+                                  <div class="card-header bg-info text-white">Week {{ week_label }}</div>
+                                  <div class="card-body p-2">
+                                    <table class="table table-bordered table-striped mb-0">
+                                      <thead class="table-dark">
+                                        <tr>
+                                          <th>Picture</th>
+                                          <th>Date</th>
+                                          <th>Time</th>
+                                          <th>Present</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {% for record in records %}
+                                          <tr>
+                                            <td>
+                                              <img src="{{ url_for('download_file', filename=record.file_name) }}" width="100" height="100">
+                                            </td>
+                                            <td>{{ record.timestamp.strftime('%B %d, %Y') }}</td>
+                                            <td>{{ record.timestamp.strftime('%I:%M %p') }}</td>
+                                            <td class="text-center">
+                                              <input type="checkbox" class="attendance-check" data-record-id="{{ record.id }}" {% if record.present %}checked{% endif %}>
+                                            </td>
+                                          </tr>
+                                        {% endfor %}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted text-center">No attendance records available yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ✅ ACCOMPLISHMENT REPORT SECTION -->
+    <div class="collapse" id="accomplishmentSection">
+      <div class="card card-body shadow mb-3">
+        <h5 class="text-primary mb-3">📘 Accomplishment Reports</h5>
+
+        {% if students %}
+        <table class="table table-bordered table-striped align-middle">
+          <thead class="table-primary text-center">
+            <tr>
+              <th>Student Name</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+            <tr>
+              <td>{{ student.name }}</td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-info view-dar-btn"
+                        data-student-id="{{ student.id }}"
+                        data-student-name="{{ student.name }}">
+                  📄 View Reports
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <p class="text-center text-muted">No assigned students yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Modal for Viewing Student Accomplishment Reports -->
+    <div class="modal fade" id="darModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">Accomplishment Reports - <span id="modalStudentName"></span></h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body" id="darModalBody">
+            <p class="text-center text-muted">Loading...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ Messages Section -->
+    <div class="collapse" id="messageSection">
+      <div class="card card-body shadow">
+        <h5 class="text-center mb-3">💬 Messages with Assigned Students</h5>
+
+        <div class="row">
+          <div class="col-md-3 border-end">
+            <ul class="list-group" id="studentList">
+              {% for student in assigned_students %}
+                <li class="list-group-item student-item" data-student-id="{{ student.id }}">
+                  <a href="#" class="student-link">👩‍🎓 {{ student.name }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <div class="col-md-9">
+            <div id="chatBox" class="border rounded p-3 mb-2" style="height: 400px; overflow-y: auto;">
+              <p class="text-muted text-center">Select a student to view messages.</p>
+            </div>
+
+            <form id="sendMessageForm" class="d-none">
+              <div class="input-group">
+                <input type="text" id="messageInput" class="form-control" placeholder="Type your message..." required>
+                <button class="btn btn-primary" type="submit">Send</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // ✅ Endorsement upload
+  document.querySelectorAll(".upload-hte-form").forEach(form => {
+    form.addEventListener("submit", function(e){
+      e.preventDefault();
+      const reqId = this.dataset.reqId;
+      const fileInput = this.querySelector('input[name="hte_endorsement_file"]');
+      if(!fileInput.files[0]) return alert("Please choose a file.");
+      const formData = new FormData();
+      formData.append("hte_endorsement_file", fileInput.files[0]);
+      fetch(`/hte/upload_endorsement/${reqId}`, { method:"POST", body: formData })
+        .then(res=>res.json()).then(data=>{
+          if(data.success){
+            document.getElementById(`approvedFile${reqId}`).innerHTML=`<a href="${data.file_url}" target="_blank">View File</a>`;
+            document.getElementById(`status${reqId}`).innerText="For Student";
+            fileInput.value="";
+          } else { alert(data.message||"Upload failed."); }
+        }).catch(()=>alert("Upload failed."));
+    });
+  });
+
+  // ✅ Attendance checkbox
+  document.querySelectorAll(".attendance-check").forEach(cb=>{
+    cb.addEventListener("change", function() {
+      const recordId=this.dataset.recordId;
+      const isPresent=this.checked?1:0;
+      fetch(`/hte/mark_attendance/${recordId}`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({present:isPresent})
+      }).then(res=>res.json()).then(data=>{
+        if(!data.success) alert(data.message||"Update failed.");
+      }).catch(()=>alert("Update failed."));
+    });
+  });
+
+  // ✅ Accomplishment report viewer
+  document.querySelectorAll('.view-dar-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const studentId = btn.getAttribute('data-student-id');
+      const studentName = btn.getAttribute('data-student-name');
+      const modalBody = document.getElementById('darModalBody');
+      document.getElementById('modalStudentName').innerText = studentName;
+
+      modalBody.innerHTML = "<p class='text-center text-muted'>Loading...</p>";
+
+      const response = await fetch(`/hte/view_accomplishments/${studentId}`);
+      const html = await response.text();
+      modalBody.innerHTML = html;
+
+      const modal = new bootstrap.Modal(document.getElementById('darModal'));
+      modal.show();
+    });
+  });
+
+  // ✅ Messages
+  const chatBox=document.getElementById("chatBox");
+  const studentList=document.getElementById("studentList");
+  const messageForm=document.getElementById("sendMessageForm");
+  const messageInput=document.getElementById("messageInput");
+  let selectedStudentId=null;
+  let lastMessageId=null;
+  let displayedMessageIds = new Set();
+
+  function appendMessage(msg){
+    if(displayedMessageIds.has(msg.id)) return;
+    const align = msg.sender_role==="hte" ? "text-end" : "text-start";
+    const color = msg.sender_role==="hte" ? "bg-primary text-white" : "bg-light";
+    chatBox.innerHTML += `
+      <div class="p-2 mb-1 rounded ${color} ${align}" data-msg-id="${msg.id}">
+        <small><b>${msg.sender_name}:</b> ${msg.content}</small><br>
+        <small class="text-muted">${msg.timestamp}</small>
+      </div>`;
+    displayedMessageIds.add(msg.id);
+    lastMessageId = msg.id;
+  }
+
+  function loadMessages(studentId){
+    fetch(`/hte/get_messages/${studentId}?after_id=${lastMessageId||''}`)
+      .then(res=>res.json()).then(data=>{
+        if(lastMessageId===null){
+          chatBox.innerHTML="";
+          displayedMessageIds.clear();
+        }
+        if(data.messages.length===0){
+          if(lastMessageId===null) chatBox.innerHTML="<p class='text-muted text-center'>No messages yet.</p>";
+        } else {
+          data.messages.forEach(msg => appendMessage(msg));
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+        messageForm.classList.remove("d-none");
+      });
+  }
+
+  studentList.querySelectorAll(".student-link").forEach(item=>{
+    item.addEventListener("click", function(e){
+      e.preventDefault();
+      selectedStudentId = this.closest(".student-item").dataset.studentId;
+      document.querySelectorAll(".student-item").forEach(i=>i.classList.remove("active"));
+      this.closest(".student-item").classList.add("active");
+      const messageSection=document.getElementById("messageSection");
+      if(!messageSection.classList.contains("show")) new bootstrap.Collapse(messageSection,{toggle:true});
+      messageSection.scrollIntoView({behavior:'smooth',block:'start'});
+      lastMessageId=null;
+      displayedMessageIds.clear();
+      loadMessages(selectedStudentId);
+    });
+  });
+
+  messageForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    if(!selectedStudentId) return alert("Select a student first.");
+    const message=messageInput.value.trim();
+    if(!message) return;
+    fetch(`/hte/send_message/${selectedStudentId}`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({content:message})
+    }).then(res=>res.json()).then(data=>{
+      if(data.success){
+        appendMessage({sender_name:"You", sender_role:"hte", content:message, timestamp:data.timestamp, id:data.message_id});
+        messageInput.value="";
+        chatBox.scrollTop=chatBox.scrollHeight;
+      } else alert(data.message||"Failed to send message.");
+    });
+  });
+
+  // ✅ Polling every 3 sec for new messages
+  setInterval(()=>{
+    if(!selectedStudentId) return;
+    fetch(`/hte/get_messages/${selectedStudentId}?after_id=${lastMessageId||''}`)
+      .then(res=>res.json()).then(data=>{
+        if(data.messages && data.messages.length>0){
+          data.messages.forEach(msg => appendMessage(msg));
+          chatBox.scrollTop=chatBox.scrollHeight;
+        }
+      });
+  },3000);
+});
+</script>
+{% endblock %}

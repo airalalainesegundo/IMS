@@ -1,0 +1,508 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+  <div class="card p-4 w-75 shadow">
+    <h3 class="text-center text-success">Student Dashboard</h3>
+    <p class="text-center">Welcome, {{ current_user.name or current_user.username }} 🎓</p>
+
+    <!-- Menu Buttons -->
+    <div class="d-flex justify-content-center mb-3 gap-2">
+      <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#endorsementSection">
+        Endorsement
+      </button>
+      <button id="attendanceBtn" class="btn btn-success" type="button" data-bs-toggle="collapse" data-bs-target="#attendanceSection">
+        Attendance
+      </button>
+      <a href="{{ url_for('student_daily_log') }}" class="btn btn-info">
+        Daily Log
+      </a>
+      <button class="btn btn-warning" type="button" data-bs-toggle="collapse" data-bs-target="#darSection">
+       Accomplishment Report
+      </button>
+      <div class="mt-3 text-center">
+        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+      </div>
+    </div>
+
+    <!-- Admin & HTE Chat Buttons -->
+    <div class="d-flex justify-content-center mb-3 gap-2">
+      <a href="{{ url_for('student_chat') }}" class="btn btn-secondary position-relative px-3 py-2">
+        Admin Chat
+        {% if unread_count > 0 %}
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ unread_count }}
+          </span>
+        {% endif %}
+        <!-- Video call icon with tooltip -->
+        <button class="btn btn-success btn-sm position-absolute bottom-0 start-0" 
+                style="font-size:0.7rem; padding:0.25rem 0.35rem;" 
+                data-bs-toggle="tooltip" data-bs-placement="top" title="Start Video Call" 
+                onclick="startVideoCall('{{ current_user.id }}')">
+          📞
+        </button>
+      </a>
+
+      <a href="{{ url_for('student_hte_chat') }}" class="btn btn-secondary position-relative">
+        HTE Chat
+        {% if hte_unread_count > 0 %}
+          <span class="position-absolute top-100 start-100 translate-middle badge rounded-pill bg-danger">
+            {{ hte_unread_count }}
+          </span>
+        {% endif %}
+      </a>
+    </div>
+
+<!-- DAR Section -->
+<div class="collapse" id="darSection">
+  <div class="card card-body shadow mb-3">
+    <h5>Accomplishment Report</h5>
+    <form id="darForm" method="post" enctype="multipart/form-data" action="{{ url_for('student_dar_upload') }}">
+      <div class="mb-2">
+        <label>Date:</label>
+        <input type="date" name="dar_date" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label>Upload File(s):</label>
+        <input type="file" name="dar_files" class="form-control" multiple required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+    </form>
+
+    <div class="mt-4">
+      <h5 class="text-center text-primary">AR Records</h5>
+      <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+        <table class="table table-bordered table-striped" id="darTable">
+          <thead class="table-dark">
+            <tr>
+              <th>Date</th>
+              <th>AR Files</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in dar_records %}
+            <tr id="dar-{{ record.id }}">
+              <td>{{ record.date.strftime('%B %d, %Y') }}</td>
+              <td>
+                {% if record.accomplishment %}
+                  {% set files = record.accomplishment | fromjson %}
+                  {% if files|length > 0 %}
+                    {% for file in files %}
+                      {% if file %}
+                        <a href="{{ url_for('static', filename='dar_uploads/' ~ file) }}" target="_blank">{{ file }}</a><br>
+                      {% endif %}
+                    {% endfor %}
+                  {% else %}
+                    <span class="text-muted">No files uploaded</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">No files uploaded</span>
+                {% endif %}
+              </td>
+              <td>
+                <button class="btn btn-danger btn-sm delete-dar-btn" data-id="{{ record.id }}">Delete</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+    <!-- Endorsement Section -->
+    <div class="collapse" id="endorsementSection">
+      <div class="card card-body shadow">
+        <div class="card p-4 mb-4 shadow">
+          <h5>Request Teacher Endorsement</h5>
+          <form method="post" action="{{ url_for('student_endorsement') }}">
+            <input type="text" name="title" class="form-control mb-2" placeholder="Name" required>
+            <textarea name="description" class="form-control mb-2" placeholder="Describe your request"></textarea>
+            <button type="submit" class="btn btn-primary">Request Endorsement</button>
+          </form>
+        </div>
+
+        <div class="card p-4 mb-4 shadow">
+          <h5>Your Previous Requests</h5>
+          {% if requests %}
+            <table class="table table-bordered table-striped">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Admin Comment</th>
+                  <th>Admin File</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for req in requests %}
+                  <tr>
+                    <td>{{ req.title }}</td>
+                    <td>{{ req.status }}</td>
+                    <td>{{ req.admin_comment or '-' }}</td>
+                    <td>
+                      {% if req.endorsement_file %}
+                        <a href="{{ url_for('download_endorsement', req_id=req.id) }}" class="btn btn-primary btn-sm">
+                          Download Endorsement Form
+                        </a>
+                      {% else %}
+                        <p class="mb-0">No endorsement form available yet.</p>
+                      {% endif %}
+                    </td>
+                    <td>
+                      <form method="post" action="{{ url_for('student_delete_endorsement', req_id=req.id) }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="text-muted">No requests yet.</p>
+          {% endif %}
+        </div>
+
+        <!-- Send Endorsement to HTE Section -->
+        <div class="card p-4 shadow mb-4">
+          <h5>Send Endorsement to HTE</h5>
+          {% if current_user.hte %}
+            <p>Assigned HTE: <strong>{{ current_user.hte.name or current_user.hte.username }}</strong></p>
+            {% for req in requests %}
+              {% if req.status == 'For HTE' and req.hte_id == current_user.hte.id %}
+                <div class="mb-3" id="send-hte-{{ req.id }}">
+                  <p><strong>{{ req.title }}</strong></p>
+                  {% if req.endorsement_file %}
+                    <p>Admin File: 
+                      <a href="{{ url_for('download_endorsement', req_id=req.id) }}" target="_blank">{{ req.endorsement_file }}</a>
+                    </p>
+                  {% endif %}
+                  <form class="send-to-hte-form mb-2" data-id="{{ req.id }}" enctype="multipart/form-data">
+                    <div class="mb-2">
+                      <label>Upload your completed endorsement to send to HTE:</label>
+                      <input type="file" name="student_endorsement_file" required class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-warning btn-sm">Send to HTE</button>
+                  </form>
+                  <div class="hte-status text-success mb-2"></div>
+                  {% if req.status == 'For HTE' and req.endorsement_file %}
+                    <p class="mt-2">File sent to HTE: 
+                      <a href="{{ url_for('download_file', filename=req.endorsement_file) }}" target="_blank">{{ req.endorsement_file }}</a>
+                    </p>
+                  {% endif %}
+                </div>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            <p class="text-muted">No HTE assigned yet by admin.</p>
+          {% endif %}
+        </div>
+
+        <div class="card p-4 shadow mb-4">
+          <h5>Approved Endorsements from HTE (Automatically Forwarded to Admin)</h5>
+          {% set has_approved = false %}
+          {% for req in requests %}
+            {% if req.hte_endorsement_file %}
+              {% set has_approved = true %}
+              <div class="card p-3 mb-2 border-success">
+                <h6>{{ req.title }}</h6>
+                <p>
+                  <a href="{{ url_for('download_file', filename=req.hte_endorsement_file) }}" target="_blank">
+                    {{ req.hte_endorsement_file }}
+                  </a>
+                </p>
+                <small class="text-success">✅ Automatically forwarded to Admin</small>
+              </div>
+            {% endif %}
+          {% endfor %}
+          {% if not has_approved %}
+            <p class="text-muted">No approved endorsements from HTE yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <script>
+// ✅ Handle DAR upload via AJAX (no page reload)
+document.getElementById("darForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+
+  fetch("{{ url_for('student_dar_upload') }}", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      // ✅ Add new DAR row automatically
+      const table = document.querySelector("#darTable tbody");
+      const newRow = document.createElement("tr");
+      newRow.id = "dar-" + data.id;
+
+      let fileLinks = "";
+      if (data.files && data.file_base_url) {
+        data.files.forEach(file => {
+          fileLinks += `<a href="${data.file_base_url}/${file}" target="_blank">${file}</a><br>`;
+        });
+      }
+
+      newRow.innerHTML = `
+        <td>${new Date(data.date).toLocaleDateString()}</td>
+        <td>${fileLinks}</td>
+        <td><button class="btn btn-danger btn-sm delete-dar-btn" data-id="${data.id}">Delete</button></td>
+      `;
+      table.prepend(newRow);
+      form.reset();
+      alert("DAR uploaded successfully!");
+    } else {
+      alert("Failed to upload DAR: " + (data.error || ""));
+    }
+  })
+  .catch(err => console.error("DAR upload error:", err));
+});
+</script>
+
+
+    <!-- Attendance Section -->
+    <div class="collapse" id="attendanceSection">
+      <div class="card card-body shadow">
+        <h5>Mark Attendance</h5>
+        <video id="video" width="320" height="240" autoplay class="mb-2"></video>
+        <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+        <div class="mb-2">
+          <img id="preview" src="" alt="Captured Photo" style="display:none; max-width:320px; border:1px solid #ccc;" class="mb-2">
+        </div>
+        <div class="mb-2">
+          <button id="snap" class="btn btn-primary btn-sm" type="button">Capture</button>
+        </div>
+
+        <div class="mt-4">
+          <h5 class="text-center text-primary">Attendance Records</h5>
+          <div class="accordion" id="attendanceAccordion">
+            {% set records_by_month = {} %}
+            {% for record in attendance %}
+              {% set month_key = record.timestamp.strftime("%B %Y") %}
+              {% if month_key not in records_by_month %}
+                {% set _ = records_by_month.update({month_key: []}) %}
+              {% endif %}
+              {% set _ = records_by_month[month_key].append(record) %}
+            {% endfor %}
+
+            {% for month, records in records_by_month.items() %}
+              <div class="accordion-item">
+                <h2 class="accordion-header" id="heading-{{ loop.index }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ loop.index }}">
+                    {{ month }} ({{ records|length }} records)
+                  </button>
+                </h2>
+                <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#attendanceAccordion">
+                  <div class="accordion-body p-0">
+                    <table class="table table-bordered table-striped mb-0" id="attendanceTable">
+                      <thead class="table-dark">
+                        <tr>
+                          <th>Picture</th>
+                          <th>Time</th>
+                          <th>Date</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for record in records %}
+                          <tr id="record-{{ record.id }}">
+                            <td><img src="{{ url_for('download_file', filename=record.file_name) }}" alt="Attendance Photo" style="max-width:100px; border:1px solid #ccc;"></td>
+                            <td>{{ record.timestamp.strftime("%I:%M %p") }}</td>
+                            <td>{{ record.timestamp.strftime("%B %d, %Y") }}</td>
+                            <td><button class="btn btn-danger btn-sm delete-btn" data-id="{{ record.id }}">Delete</button></td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- 🗑️ Deleted Attendance Section -->
+<div class="mt-4">
+  <h5 class="text-center text-danger">
+    <a class="text-danger text-decoration-none" 
+       data-bs-toggle="collapse" 
+       href="#deletedAttendanceCollapse" 
+       role="button" 
+       aria-expanded="false" 
+       aria-controls="deletedAttendanceCollapse">
+       🗑️ Deleted Attendance Records
+    </a>
+  </h5>
+
+  <div class="collapse mt-3" id="deletedAttendanceCollapse">
+    {% if deleted_attendance %}
+    <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+      <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+          <tr>
+            <th>Picture</th>
+            <th>Time</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in deleted_attendance %}
+          <tr id="deleted-record-{{ record.id }}">
+            <td>
+              <img src="{{ url_for('download_file', filename=record.file_name) }}" 
+                   style="max-width:100px; border:1px solid #ccc;">
+            </td>
+            <td>{{ record.timestamp.strftime("%I:%M %p") }}</td>
+            <td>{{ record.timestamp.strftime("%B %d, %Y") }}</td>
+            <td>
+              <button class="btn btn-success btn-sm restore-btn" data-id="{{ record.id }}">
+                Restore
+              </button>
+              <button class="btn btn-danger btn-sm permanent-delete-btn" data-id="{{ record.id }}">
+                Delete Permanently
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="text-center text-muted">No deleted attendance records.</p>
+    {% endif %}
+  </div>
+</div>
+
+      </div>
+    </div>
+
+<script>
+let stream = null;
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const snapButton = document.getElementById('snap');
+const preview = document.getElementById('preview');
+const attendanceSection = document.getElementById('attendanceSection');
+const attendanceBtn = document.getElementById('attendanceBtn');
+const attendanceTable = document.querySelector('#attendanceTable tbody');
+let capturedImage = "";
+
+// ✅ Open camera when Attendance button is clicked
+attendanceBtn.addEventListener('click', startCamera);
+
+// Start & Stop Camera
+function startCamera() {
+  if (stream) return;
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(s => { stream = s; video.srcObject = s; })
+    .catch(err => alert("Camera not accessible: " + err.message));
+}
+
+function stopCamera() {
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+    stream = null;
+    video.srcObject = null;
+  }
+}
+
+attendanceSection.addEventListener('hidden.bs.collapse', stopCamera);
+
+// ✅ Capture photo and automatically upload
+snapButton.addEventListener('click', () => {
+  const today = new Date();
+  const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+
+  const existingRecords = [...attendanceTable.querySelectorAll('tr')].filter(row => {
+    const dateText = row.cells[2]?.innerText?.trim();
+    if (!dateText) return false;
+    const recordDate = new Date(dateText);
+    return recordDate.toISOString().split('T')[0] === todayString;
+  });
+
+  if (existingRecords.length >= 4) {
+    alert("You have already marked attendance 4 times today.");
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  capturedImage = canvas.toDataURL('image/png');
+  preview.src = capturedImage;
+  preview.style.display = 'block';
+
+  // ⚡ FIX: send JSON instead of FormData
+  fetch("{{ url_for('student_attendance') }}", {
+    method: 'POST',
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ attendance_file: capturedImage })
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const newRow = document.createElement('tr');
+        newRow.id = "record-" + data.id;
+        const time = new Date(data.timestamp);
+        const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const formattedDate = time.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        newRow.innerHTML = `
+          <td><img src="${data.file_url}" style="max-width:100px; border:1px solid #ccc;"></td>
+          <td>${formattedTime}</td>
+          <td>${formattedDate}</td>
+          <td><button class="btn btn-danger btn-sm delete-btn" data-id="${data.id}">Delete</button></td>
+        `;
+        attendanceTable.prepend(newRow);
+        attachDeleteEvents();
+        
+        // ✅ FIX: Reload page so attendance shows in correct month
+        alert("Attendance captured and saved!");
+        window.location.reload();
+      } else {
+        alert("Failed to save attendance: " + (data.error || ""));
+      }
+    })
+    .catch(err => console.error("Upload error:", err));
+});
+
+function attachDeleteEvents() {
+  document.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.getAttribute('data-id');
+      if (!confirm('Are you sure?')) return;
+      fetch(`/student/delete_attendance/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(d => {
+          if (d.success) document.getElementById('record-' + id)?.remove();
+          else alert("Failed to delete: " + (d.error || ""));
+        })
+        .catch(console.error);
+    };
+  });
+}
+attachDeleteEvents();
+
+// ✅ Video call function
+function startVideoCall(userId) {
+  const roomName = 'student-admin-room-' + userId;
+  const url = `https://meet.jit.si/${roomName}`;
+  window.open(url, '_blank', 'width=800,height=600');
+}
+
+// ✅ Enable tooltip
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+</script>
+
+{% endblock %}

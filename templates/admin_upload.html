@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card p-3 w-50">
+    <h5>Upload endorsement for: {{ req.title }}</h5>
+    <p>Student ID: {{ req.student_id }}</p>
+    <form method="post" enctype="multipart/form-data">
+      <div class="mb-2">
+        <input type="file" name="file" class="form-control" required>
+      </div>
+      <textarea class="form-control mb-2" name="admin_comment" placeholder="Optional admin comment"></textarea>
+      <div class="d-grid">
+        <button class="btn btn-primary">Upload & Send</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card p-4 shadow-lg">
+    <h3 class="text-primary text-center">🏢 {{ hte.name }}</h3>
+    <p class="text-center text-muted">Username: {{ hte.username }}</p>
+
+    <h5 class="mt-4 text-center">👨‍🎓 Students Assigned</h5>
+
+    {% if students %}
+    <div class="table-responsive mt-3">
+      <table class="table table-bordered table-striped text-center align-middle">
+        <thead class="table-primary">
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Total Hours</th>
+            <th>Remaining Hours</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for student in students %}
+          <tr>
+            <td>{{ student.name }}</td>
+            <td>{{ student.username }}</td>
+            <td>{{ "%.2f"|format(student.total_hours or 0) }}</td>
+            <td>{{ "%.2f"|format(student.remaining_hours or 0) }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-muted text-center mt-3">No students assigned to this HTE yet.</p>
+    {% endif %}
+
+    <div class="text-center mt-4">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">⬅ Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <h3>My Assigned Students</h3>
+  {% if students %}
+    <ul class="list-group mt-3">
+      {% for student in students %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('hte_chat_with_student', student_id=student.id) }}">
+            {{ student.name }}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No students assigned yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

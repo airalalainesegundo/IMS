@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+  <div class="card p-4 w-75 shadow">
+
+    <h3 class="text-center text-primary">Admin Chat</h3>
+
+    <!-- Chat Header: Admin Name + Video Call -->
+    <div class="chat-header d-flex align-items-center justify-content-between p-2 border-bottom mb-3">
+      <div class="admin-info d-flex align-items-center gap-2">
+        <img src="{{ admin.profile_pic_url or url_for('static', filename='default_admin.png') }}" 
+             alt="Admin" class="rounded-circle" width="40" height="40">
+        <strong>{{ admin.name or admin.username }}</strong>
+        <!-- Video Call Button -->
+        <button class="btn btn-success btn-sm"
+                data-bs-toggle="tooltip" data-bs-placement="top" title="Start Video Call"
+                onclick="startVideoCall('{{ admin.id }}')">
+          📞
+        </button>
+      </div>
+      <div>
+        <a href="{{ url_for('dashboard_student') }}" class="btn btn-secondary btn-sm">Back to Dashboard</a>
+      </div>
+    </div>
+
+    <!-- Chat Messages -->
+    <div class="chat-messages mb-3" id="chatMessages" style="height:300px; overflow-y:auto; border:1px solid #ccc; padding:10px;">
+      {% for msg in messages %}
+        <div class="message {% if msg.sender_id == current_user.id %}sent text-end{% else %}received text-start{% endif %}">
+          <span class="badge bg-secondary">{{ msg.sender_name }}</span><br>
+          <span>{{ msg.text }}</span>
+          <small class="text-muted d-block">{{ msg.timestamp.strftime('%b %d, %I:%M %p') }}</small>
+        </div>
+        <hr class="my-1">
+      {% endfor %}
+    </div>
+
+    <!-- Send Message Form -->
+    <form id="chatForm" class="d-flex gap-2">
+      <input type="text" id="messageInput" class="form-control" placeholder="Type a message..." required>
+      <button type="submit" class="btn btn-primary">Send</button>
+    </form>
+
+  </div>
+</div>
+
+<script>
+// Video Call Function
+function startVideoCall(adminId) {
+  const roomName = 'student-admin-room-' + adminId;
+  const url = `https://meet.jit.si/${roomName}`;
+  window.open(url, '_blank', 'width=800,height=600');
+}
+
+// Enable tooltip
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Send Chat Message via fetch
+const chatForm = document.getElementById('chatForm');
+const chatMessages = document.getElementById('chatMessages');
+chatForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const messageText = document.getElementById('messageInput').value.trim();
+  if (!messageText) return;
+
+  fetch("{{ url_for('student_send_message', admin_id=admin.id) }}", {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: messageText })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) {
+      const newMsg = document.createElement('div');
+      newMsg.className = 'message sent text-end';
+      newMsg.innerHTML = `<span class="badge bg-secondary">{{ current_user.username }}</span><br>${messageText}<br><small class="text-muted d-block">Just now</small>`;
+      chatMessages.appendChild(newMsg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      document.getElementById('messageInput').value = '';
+    } else {
+      alert('Failed to send message.');
+    }
+  })
+  .catch(console.error);
+});
+</script>
+
+{% endblock %}

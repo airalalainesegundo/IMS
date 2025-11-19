@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+  <div class="card p-4 w-90 shadow">
+    <h3 class="text-center text-primary">Parent Dashboard</h3>
+    <p class="text-center">Welcome, {{ current_user.name }}! 👪</p>
+
+    {% if not selected_student %}
+      <h5 class="text-center">
+        <a href="#" onclick="toggleStudentList(); return false;" class="text-decoration-none">
+          📌 Select your child
+        </a>
+      </h5>
+
+      <ul id="student-list" class="list-group mt-3 d-none">
+        {% for student in students %}
+        <li class="list-group-item text-center">
+          <form method="POST" action="{{ url_for('parent_select_student', student_id=student.id) }}">
+            <button type="submit" class="btn btn-link p-0 text-decoration-none fw-bold">
+              {{ student.name }}
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+
+    {% else %}
+      <h4 class="text-center mb-3">📌 Student: {{ selected_student.name }}</h4>
+
+      <!-- Buttons to toggle sections -->
+      <div class="text-center mb-3">
+        <button class="btn btn-success me-2" data-bs-toggle="collapse" data-bs-target="#attendanceSection">
+          📅 Attendance
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#darSection">
+          🗂️ Accomplishment Report
+        </button>
+      </div>
+
+      <!-- Attendance Section -->
+      <div class="collapse show" id="attendanceSection">
+        {% if attendance_records_by_month %}
+        <div class="accordion" id="attendanceAccordion">
+          {% for month, records in attendance_records_by_month.items() %}
+          <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ loop.index }}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                      data-bs-target="#collapse{{ loop.index }}">
+                {{ month }} ({{ records|length }} days)
+              </button>
+            </h2>
+            <div id="collapse{{ loop.index }}" class="accordion-collapse collapse"
+                 data-bs-parent="#attendanceAccordion">
+              <div class="accordion-body p-0">
+                <table class="table table-bordered table-sm mb-0">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Attendance Picture</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for a in records %}
+                    <tr>
+                      <td>{{ a.timestamp.strftime('%B %d, %Y - %I:%M %p') }}</td>
+                      <td>
+                        {% if a.file_name %}
+                        <a href="{{ url_for('download_file', filename=a.file_name) }}" target="_blank">
+                          <img src="{{ url_for('download_file', filename=a.file_name) }}" alt="Attendance" width="100">
+                        </a>
+                        {% else %}
+                          <span class="text-muted">None</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-muted text-center">No attendance records yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- DAR Section (Read-Only) -->
+<div class="collapse" id="darSection">
+  <div class="card card-body shadow mb-3">
+    <h5 class="text-center text-primary">🗂️ Daily Accomplishment Reports</h5>
+
+    <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+      <table class="table table-bordered table-striped" id="darTable">
+        <thead class="table-dark">
+          <tr>
+            <th>Date</th>
+            <th>Files</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in dar_records %}
+          <tr id="dar-{{ record.id }}">
+            <td>{{ record.date.strftime('%B %d, %Y') }}</td>
+            <td>
+              {% set files = [] %}
+              {% if record.accomplishment %}
+                {% set files = record.accomplishment | safe | fromjson %}
+              {% endif %}
+
+              {% if files and files|length > 0 %}
+                {% for file in files %}
+                  <a href="{{ url_for('static', filename='dar_uploads/' ~ file) }}" target="_blank">{{ file }}</a><br>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">No files uploaded</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+    {% endif %}
+
+    <!-- Logout -->
+    <div class="mt-3 text-center">
+      <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggleStudentList() {
+  const list = document.getElementById("student-list");
+  list.classList.toggle("d-none");
+}
+</script>
+{% endblock %}

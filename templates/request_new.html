@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card p-4 w-50">
+    <h4>New Endorsement Request</h4>
+    <form method="post">
+      <input class="form-control mb-2" name="title" placeholder="Request title" required>
+      <textarea class="form-control mb-2" name="description" placeholder="Reason / details" required></textarea>
+      <div class="d-grid">
+        <button class="btn btn-primary">Send to Admin</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

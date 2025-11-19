@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Daily Log</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .dashboard-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 15px;
+            transition: 0.3s;
+        }
+        .dashboard-btn:hover {
+            background-color: #45a049;
+        }
+        .summary {
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .text-muted {
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back Button -->
+    <a href="{{ url_for('student_dashboard') }}" class="dashboard-btn">⬅ Back to Dashboard</a>
+
+    <h1>Daily Log</h1>
+
+    <!-- ✅ Summary Section -->
+    <div class="summary">
+        ✅ Total Hours Done: {{ "%.2f"|format(total_done_hours|float) }} hrs |
+        ⏳ Remaining Hours: {{ "%.2f"|format(remaining_hours|float) }} hrs
+    </div>
+
+    <!-- ✅ Daily Logs Table -->
+    <table class="table table-striped text-center mt-4">
+        <thead class="table-primary">
+            <tr>
+                <th>Date</th>
+                <th>IN (AM)</th>
+                <th>OUT (AM)</th>
+                <th>IN (PM)</th>
+                <th>OUT (PM)</th>
+                <th>Total Hours</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in daily_logs %}
+                <tr>
+                    <td>{{ log.date }}</td>
+                    <td>{{ log.in_am or '—' }}</td>
+                    <td>{{ log.out_am or '—' }}</td>
+                    <td>{{ log.in_pm or '—' }}</td>
+                    <td>{{ log.out_pm or '—' }}</td>
+                    <td>{{ "%.2f"|format(log.total_hours|float) }} hrs</td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="6" class="text-muted">No attendance records found.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

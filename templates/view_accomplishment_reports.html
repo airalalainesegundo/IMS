@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <div class="card shadow p-4">
+    <h4 class="text-center text-primary mb-3">
+      📘 Accomplishment Report Files for {{ student.name }}
+    </h4>
+
+    {% if dar_records %}
+    <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
+      <table class="table table-bordered table-striped">
+        <thead class="table-primary text-center">
+          <tr>
+            <th>Date</th>
+            <th>Files</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in dar_records %}
+          <tr>
+            <td>{{ record.date.strftime('%B %d, %Y') }}</td>
+            <td>
+              {% for f in record.accomplishment | from_json %}
+                <a href="{{ url_for('static', filename='dar_uploads/' ~ f) }}"
+                   target="_blank"
+                   download="{{ f }}"
+                   class="text-decoration-none">
+                   📄 {{ f }}
+                </a><br>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-center text-muted">No Accomplishment Report files uploaded yet.</p>
+    {% endif %}
+
+    <div class="text-center mt-3">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

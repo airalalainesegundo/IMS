@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-center">
+  <div class="card p-3 w-50">
+    <h5>Apply to HTE using endorsement: {{ req.title }}</h5>
+    <p>Endorsement file: {% if req.endorsement_file %}<a href="{{ url_for('uploaded_file', filename=req.endorsement_file) }}">Download</a>{% else %}None{% endif %}</p>
+    <form method="post">
+      <div class="mb-2">
+        <select name="hte_id" class="form-select">
+          {% for h in htes %}
+            <option value="{{ h.id }}">{{ h.name }} ({{ h.username }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-grid">
+        <button class="btn btn-success">Send to HTE</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

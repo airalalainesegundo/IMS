@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow p-4">
+    <h3 class="text-center text-primary mb-3">📅 Attendance Records of {{ student.name or student.username }}</h3>
+
+    {% if attendance_records_by_month %}
+      <div class="accordion" id="accordion-{{ student.id }}">
+        {% for month, records in attendance_records_by_month.items() %}
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="heading-{{ loop.index }}">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapse-{{ loop.index }}">
+              {{ month }} ({{ records|length }} days)
+            </button>
+          </h2>
+          <div id="collapse-{{ loop.index }}" class="accordion-collapse collapse" data-bs-parent="#accordion-{{ student.id }}">
+            <div class="accordion-body p-0">
+              <table class="table table-bordered table-sm mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Attendance Picture</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for a in records %}
+                  <tr>
+                    <td>{{ a.timestamp.strftime('%B %d, %Y - %I:%M %p') }}</td>
+                    <td>
+                      {% if a.file_name %}
+                      <a href="{{ url_for('download_file', filename=a.file_name) }}" target="_blank">
+                        <img src="{{ url_for('download_file', filename=a.file_name) }}" alt="Attendance" width="100">
+                      </a>
+                      {% else %}
+                        <span class="text-muted">None</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted text-center">No attendance records available.</p>
+    {% endif %}
+
+    <div class="mt-4 text-center">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">⬅️ Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

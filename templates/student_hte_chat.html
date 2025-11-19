@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <h3 class="text-center text-primary mb-4">HTE Chat</h3>
+
+    <!-- Chat messages box -->
+    <div class="card p-3 shadow mb-3" style="max-height:400px; overflow-y:auto;" id="chatBox">
+        {% if messages %}
+            {% for msg in messages %}
+                <div class="mb-2">
+                    <strong>
+                        {% if msg.sender_id == current_user.id %}
+                            You
+                        {% else %}
+                            HTE
+                        {% endif %}
+                        :
+                    </strong>
+                    {{ msg.content }}
+                    <small class="text-muted float-end">{{ msg.timestamp.strftime('%b %d, %I:%M %p') }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted text-center">No messages yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Send message form -->
+    <form id="hteMessageForm">
+        <input type="hidden" name="receiver_id" value="{{ hte_id }}">
+        <div class="input-group mb-3">
+            <input type="text" name="message" id="messageInput" class="form-control" placeholder="Type your message..." autocomplete="off">
+            <button class="btn btn-primary" type="submit">Send</button>
+        </div>
+    </form>
+
+    <!-- Back to Dashboard Button -->
+    <div class="text-center">
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-secondary mt-3">← Back to Dashboard</a>
+    </div>
+</div>
+
+<!-- JS: AJAX JSON send -->
+<script>
+const chatBox = document.getElementById('chatBox');
+const form = document.getElementById('hteMessageForm');
+const messageInput = document.getElementById('messageInput');
+
+// Scroll to bottom on load
+chatBox.scrollTop = chatBox.scrollHeight;
+
+// Send message via AJAX JSON
+form.addEventListener('submit', function(e){
+    e.preventDefault();
+
+    const message = messageInput.value.trim();
+    const receiver_id = "{{ hte_id }}";
+
+    if(!message) return alert("Message cannot be empty.");
+
+    fetch("{{ url_for('send_hte_message') }}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({receiver_id, message})
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success){
+            const newMsg = document.createElement('div');
+            newMsg.classList.add('mb-2');
+            newMsg.innerHTML = `<strong>You:</strong> ${data.message} <small class="text-muted float-end">${data.timestamp}</small>`;
+            chatBox.appendChild(newMsg);
+            messageInput.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+        } else {
+            alert(data.error || "Failed to send message.");
+        }
+    })
+    .catch(err => { console.error(err); alert("Error sending message."); });
+});
+</script>
+{% endblock %}

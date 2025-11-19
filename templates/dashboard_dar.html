@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Upload Daily Accomplishment Report (DAR)</h2>
+
+<form method="POST" action="{{ url_for('dashboard_dar') }}">
+    <label>Date:</label>
+    <input type="date" name="date" required><br><br>
+
+    <label>Accomplishment:</label><br>
+    <textarea name="accomplishment" rows="4" cols="50" required></textarea><br><br>
+
+    <button type="submit">Save DAR</button>
+</form>
+
+<hr>
+<h3>Your DAR Records</h3>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>Date</th>
+        <th>Accomplishment</th>
+    </tr>
+    {% for record in dar_records %}
+    <tr>
+        <td>{{ record.date.strftime("%B %d, %Y") }}</td>
+        <td>{{ record.accomplishment }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="2">No records yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

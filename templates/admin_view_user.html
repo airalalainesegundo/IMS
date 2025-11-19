@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-center mt-5">
+  <div class="card p-4 w-90 shadow">
+    <h3 class="text-center text-primary">Student Details</h3>
+    <p><strong>Name:</strong> {{ user.name }}</p>
+    <p><strong>Username:</strong> {{ user.username }}</p>
+    <p><strong>Role:</strong> {{ user.role }}</p>
+
+    {% if user.role == 'student' %}
+    <div class="mt-4">
+      <!-- Endorsements Button -->
+      <button class="btn btn-outline-primary mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#endorsementsTable" aria-expanded="false" aria-controls="endorsementsTable">
+        Endorsements
+      </button>
+      <div class="collapse" id="endorsementsTable">
+        <div class="card card-body mb-3">
+          {% if endorsements %}
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Status</th>
+                <th>Admin Comment</th>
+                <th>File</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for e in endorsements %}
+              <tr>
+                <td>{{ e.title }}</td>
+                <td>{{ e.description }}</td>
+                <td>{{ e.status }}</td>
+                <td>{{ e.admin_comment or '—' }}</td>
+                <td>
+                  {% if e.endorsement_file %}
+                  <a href="{{ url_for('download_file', filename=e.endorsement_file) }}" target="_blank">View</a>
+                  {% else %}
+                  None
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted">No endorsements yet.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Attendance Button -->
+      <button class="btn btn-outline-success mb-2" type="button" data-bs-toggle="collapse" data-bs-target="#attendanceTable" aria-expanded="false" aria-controls="attendanceTable">
+        HTE-Approved Attendance
+      </button>
+      <div class="collapse" id="attendanceTable">
+        <div class="card card-body mb-3">
+          {% if attendances %}
+          <table class="table table-bordered table-sm">
+            <thead>
+              <tr>
+                <th>Timestamp</th>
+                <th>Attendance Picture</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in attendances %}
+              <tr>
+                <td>{{ a.timestamp.strftime('%B %d, %Y - %I:%M %p') }}</td>
+                <td>
+                  {% if a.file_name %}
+                  <a href="{{ url_for('download_file', filename=a.file_name) }}" target="_blank">
+                    <img src="{{ url_for('download_file', filename=a.file_name) }}" alt="Attendance" width="100">
+                  </a>
+                  {% else %}
+                  None
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="text-muted">No attendance marked yet.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-3 text-center">
+      <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+  <div class="card shadow p-4">
+    <h3 class="text-center text-primary mb-3">Attendance — {{ student.name }}</h3>
+    <p class="text-center">Month: {{ month }}/{{ year }}</p>
+
+    <table class="table table-bordered text-center">
+      <thead class="table-light">
+        <tr>
+          <th>Sun</th>
+          <th>Mon</th>
+          <th>Tue</th>
+          <th>Wed</th>
+          <th>Thu</th>
+          <th>Fri</th>
+          <th>Sat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for week in month_calendar %}
+        <tr>
+          {% for day in week %}
+            {% if day == 0 %}
+              <td></td>
+            {% else %}
+              <td>
+                <div>{{ day }}</div>
+                {% if day in attendance_dict %}
+                  {% for time in attendance_dict[day] %}
+                    <small class="text-success">{{ time }}</small><br>
+                  {% endfor %}
+                {% else %}
+                  <small class="text-muted">—</small>
+                {% endif %}
+              </td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
