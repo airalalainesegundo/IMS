@@ -20,10 +20,9 @@ from datetime import datetime, timedelta
 
 
 
-
-
 app = Flask(__name__)
 app.secret_key = "ims_secret"
+
 
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
